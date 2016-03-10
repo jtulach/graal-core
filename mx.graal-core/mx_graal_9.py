@@ -350,14 +350,19 @@ def _parseVmArgs(jdk, args, addDefaultArgs=True):
     if _jvmciModes[_vm.jvmciMode]:
         bcp.extend([d.get_classpath_repr() for d in _bootClasspathDists])
 
-    args = ['-Xbootclasspath/p:' + os.pathsep.join(bcp)] + args
+    if mx.get_opts().graal_on_bootclasspath:
+        args = ['-Xbootclasspath/p:' + os.pathsep.join(bcp)] + args
 
     # Remove JVMCI from class path. It's only there to support compilation.
     cpIndex, cp = mx.find_classpath_arg(args)
     if cp:
         jvmciLib = mx.library('JVMCI').path
         cp = os.pathsep.join([e for e in cp.split(os.pathsep) if e != jvmciLib])
+        if not mx.get_opts().graal_on_bootclasspath:
+            cp = os.pathsep.join(bcp) + os.pathsep + cp
         args[cpIndex] = cp
+    elif not mx.get_opts().graal_on_bootclasspath:
+        args = ['-cp', os.pathsep.join(bcp)] + args
 
     # Set the default JVMCI compiler
     jvmciCompiler = _compilers[-1]
@@ -439,6 +444,7 @@ mx.update_commands(_suite, {
 })
 
 mx.add_argument('-M', '--jvmci-mode', action='store', choices=sorted(_jvmciModes.viewkeys()), help='the JVM variant type to build/run (default: ' + _vm.jvmciMode + ')')
+mx.add_argument('--non-bootclasspath', dest='graal_on_bootclasspath', action='store_false', help='put Graal on application class path instead of boot class path')
 
 def mx_post_parse_cmd_line(opts):
     if opts.jvmci_mode is not None:
