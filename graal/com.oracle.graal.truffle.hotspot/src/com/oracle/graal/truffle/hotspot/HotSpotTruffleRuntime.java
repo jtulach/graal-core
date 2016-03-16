@@ -128,11 +128,6 @@ public final class HotSpotTruffleRuntime extends GraalTruffleRuntime {
         setDontInlineCallBoundaryMethod();
     }
 
-    @Override
-    public String getName() {
-        return "Graal Truffle Runtime";
-    }
-
     private volatile Lazy lazy;
 
     private Lazy lazy() {

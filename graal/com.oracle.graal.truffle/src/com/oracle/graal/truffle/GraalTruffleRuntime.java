@@ -63,6 +63,9 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerOptions;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleRuntime;
+import com.oracle.truffle.api.boot.LoopCountSupport;
+import com.oracle.truffle.api.boot.TruffleInfo;
+import com.oracle.truffle.api.boot.TruffleServices;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameInstance;
 import com.oracle.truffle.api.frame.FrameInstanceVisitor;
@@ -84,7 +87,8 @@ import jdk.vm.ci.meta.MetaAccessProvider;
 import jdk.vm.ci.meta.ResolvedJavaMethod;
 import jdk.vm.ci.services.Services;
 
-public abstract class GraalTruffleRuntime implements TruffleRuntime {
+public abstract class GraalTruffleRuntime extends TruffleServices implements TruffleRuntime {
+    static TruffleInfo INFO;
 
     protected abstract static class BackgroundCompileQueue implements CompilerThreadFactory.DebugConfigAccess {
         private final ExecutorService compileQueue;
@@ -120,7 +124,9 @@ public abstract class GraalTruffleRuntime implements TruffleRuntime {
     private final Supplier<GraalRuntime> graalRuntime;
 
     public GraalTruffleRuntime(Supplier<GraalRuntime> graalRuntime) {
+        super("Graal Truffle Runtime");
         this.graalRuntime = graalRuntime;
+        INFO = info();
     }
 
     public abstract TruffleCompiler getTruffleCompiler();
@@ -187,6 +193,10 @@ public abstract class GraalTruffleRuntime implements TruffleRuntime {
             loopNodeFactory = loadPrioritizedServiceProvider(LoopNodeFactory.class);
         }
         return loopNodeFactory;
+    }
+
+    protected final LoopCountSupport loopCount() {
+        return OptimizedCallTarget.LOOP_COUNT_SUPPORT;
     }
 
     @Override

@@ -55,10 +55,9 @@ import com.oracle.truffle.api.OptimizationFailedException;
 import com.oracle.truffle.api.ReplaceObserver;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
-import com.oracle.truffle.api.TruffleLanguage;
+import com.oracle.truffle.api.boot.LoopCountSupport;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.impl.Accessor;
 import com.oracle.truffle.api.impl.DefaultCompilerOptions;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
@@ -79,6 +78,7 @@ import jdk.vm.ci.meta.SpeculationLog;
 @SuppressWarnings("deprecation")
 public class OptimizedCallTarget extends InstalledCode implements RootCallTarget, ReplaceObserver, com.oracle.truffle.api.LoopCountReceiver {
     private static final RootNode UNINITIALIZED = RootNode.createConstantNode(null);
+    static final LoopCountSupport<Node> LOOP_COUNT_SUPPORT = new AccessorOptimizedCallTarget();
 
     protected final GraalTruffleRuntime runtime;
     private SpeculationLog speculationLog;
@@ -171,7 +171,7 @@ public class OptimizedCallTarget extends InstalledCode implements RootCallTarget
         synchronized (this) {
             if (!initialized) {
                 ensureCloned();
-                ACCESSOR.initializeCallTarget(this);
+                GraalTruffleRuntime.INFO.initializeCallTarget(this);
                 initialized = true;
             }
         }
@@ -648,28 +648,13 @@ public class OptimizedCallTarget extends InstalledCode implements RootCallTarget
         this.compilationTask = compilationTask;
     }
 
-    static final AccessorOptimizedCallTarget ACCESSOR = new AccessorOptimizedCallTarget();
-
-    static final class AccessorOptimizedCallTarget extends Accessor {
-
-        @Override
-        @SuppressWarnings("rawtypes")
-        protected Class<? extends TruffleLanguage> findLanguage(RootNode n) {
-            return super.findLanguage(n);
+    private static final class AccessorOptimizedCallTarget extends LoopCountSupport<Node> {
+        AccessorOptimizedCallTarget() {
+            super(Node.class);
         }
 
         @Override
-        protected void initializeCallTarget(RootCallTarget target) {
-            super.initializeCallTarget(target);
-        }
-
-        @Override
-        protected boolean supportsOnLoopCount() {
-            return true;
-        }
-
-        @Override
-        protected void onLoopCount(Node source, int count) {
+        public void onLoopCount(Node source, int count) {
             Node node = source;
             Node parentNode = source != null ? source.getParent() : null;
             while (node != null) {
