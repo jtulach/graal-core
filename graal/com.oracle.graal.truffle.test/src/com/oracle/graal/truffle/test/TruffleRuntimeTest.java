@@ -32,6 +32,9 @@ import com.oracle.graal.runtime.RuntimeProvider;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleRuntime;
 import com.oracle.truffle.api.impl.DefaultTruffleRuntime;
+import com.oracle.truffle.api.impl.TVMCI;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertSame;
 
 public class TruffleRuntimeTest {
 
@@ -49,5 +52,16 @@ public class TruffleRuntimeTest {
     public void testRuntimeIsGraalRuntime() {
         TruffleRuntime runtime = Truffle.getRuntime();
         assertTrue(runtime.getClass() != DefaultTruffleRuntime.class);
+    }
+
+    @Test
+    public void findTVMCI() {
+        TruffleRuntime runtime = Truffle.getRuntime();
+        TVMCI tvmci = runtime.getCapability(TVMCI.class);
+        assertNotNull("Truffle Virtual Machine Compiler Interface found", tvmci);
+        assertEquals("GraalTVMCI", tvmci.getClass().getSimpleName());
+
+        Object object = runtime.getCapability(Object.class);
+        assertSame("The same instance returned for Object.class", tvmci, object);
     }
 }
