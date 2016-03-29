@@ -34,6 +34,7 @@ import com.oracle.truffle.api.TruffleRuntime;
 import com.oracle.truffle.api.impl.DefaultTruffleRuntime;
 import com.oracle.truffle.api.impl.TVMCI;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 
 public class TruffleRuntimeTest {
@@ -63,5 +64,14 @@ public class TruffleRuntimeTest {
 
         Object object = runtime.getCapability(Object.class);
         assertSame("The same instance returned for Object.class", tvmci, object);
+    }
+
+    @Test
+    public void findTVMCIForStrangeSubclass() {
+        TruffleRuntime runtime = Truffle.getRuntime();
+        abstract class TVMCISubclass extends TVMCI {
+        }
+        TVMCISubclass subclass = runtime.getCapability(TVMCISubclass.class);
+        assertNull("null returned for strange TVMCI subclass", subclass);
     }
 }
